@@ -1,0 +1,318 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+</head>
+<body>
+
+<h2>[ポケポケ]セレビィEX確率計算機</h2>
+
+<div class="jaro">
+<span class="jarotext">ジャローダ</span>
+<span class="jarocheck" onclick="reflect();">
+<input type="checkbox" id="double"/>
+<label for="double">有</label>
+</span>
+</div>
+
+<div class="enetext">草エネルギーの数</div>
+<div>
+<button class="btn" onclick="addNum(-5);">&lt;&lt;</button>
+<button class="btn" onclick="addNum(-1);">&lt;</button>
+<span class="num" id="num"></span>
+<button class="btn" onclick="addNum(1);">&gt;</button>
+<button class="btn" onclick="addNum(5);">&gt;&gt;</button>
+</div>
+
+<div id="otherhide" class="hide" onclick="showOther();">その他のエネルギーも入力</div>
+<div id="other" class="">
+<div class="enetext">草以外のエネルギーの数</div>
+<div>
+<button class="btn" onclick="addOtherNum(-5);">&lt;&lt;</button>
+<button class="btn" onclick="addOtherNum(-1);">&lt;</button>
+<span class="num" id="otherNum"></span>
+<button class="btn" onclick="addOtherNum(1);">&gt;</button>
+<button class="btn" onclick="addOtherNum(5);">&gt;&gt;</button>
+</div>
+</div>
+<div class="whenthrowtext">コインを<span id="coinNum"></span>枚投げた時…</div>
+<div><span class="probtext">0枚<span class="ijotext"></span>表が出る確率：</span><span id="top0"></span>％<span class="bar" id="bar0">&nbsp;</span><span class="restbar" id="restbar0">&nbsp;</span></div>
+<div><span class="probtext">1枚<span class="ijotext"></span>表が出る確率：</span><span id="top1"></span>％<span class="bar" id="bar1">&nbsp;</span><span class="restbar" id="restbar1">&nbsp;</span></div>
+<div><span class="probtext">2枚<span class="ijotext"></span>表が出る確率：</span><span id="top2"></span>％<span class="bar" id="bar2">&nbsp;</span><span class="restbar" id="restbar2">&nbsp;</span></div>
+<div><span class="probtext">3枚<span class="ijotext"></span>表が出る確率：</span><span id="top3"></span>％<span class="bar" id="bar3">&nbsp;</span><span class="restbar" id="restbar3">&nbsp;</span></div>
+<div><span class="probtext">4枚<span class="ijotext"></span>表が出る確率：</span><span id="top4"></span>％<span class="bar" id="bar4">&nbsp;</span><span class="restbar" id="restbar4">&nbsp;</span></div>
+
+<br>
+<div>
+<span class="jtcheck" onclick="reflect();">
+<input type="radio" name="ruikei" id="jt"/>
+<label for="jt">ちょうど</label>
+</span>
+<span class="gtcheck" onclick="reflect();">
+<input type="radio" name="ruikei" id="gt"/>
+<label for="gt">〇〇枚以上</label>
+</span>
+<span class="ltcheck" onclick="reflect();">
+<input type="radio" name="ruikei" id="lt"/>
+<label for="lt">〇〇枚以下</label>
+</span>
+</div>
+
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+const MAXNUM = 30;
+const MINNUM = 1;
+const MINOTHERNUM = 0;
+const INITNUM = 2;
+const INITOTHERNUM = 0;
+const PROBDIGITS = 2;
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function getNum(){
+ return Number(document.getElementById("num").innerText);
+}
+
+function setNum(n){
+ document.getElementById("num").innerText = n;
+}
+
+function getOtherNum(){
+ return Number(document.getElementById("otherNum").innerText);
+}
+
+function setOtherNum(n){
+ document.getElementById("otherNum").innerText = n;
+}
+
+function calcCoinNum(){
+ return document.getElementById("double").checked ? getNum() * 2 + getOtherNum() : getNum() + getOtherNum();
+}
+
+function reflectCoinNum(){
+ document.getElementById("coinNum").innerText = calcCoinNum();
+}
+
+function addNum(n){
+ var m = getNum() + n;
+ if(m < MINNUM){
+  m = MINNUM;
+ }
+ if(m > MAXNUM){
+  m = MAXNUM;
+ }
+ setNum(m);
+ reflect();
+}
+
+function addOtherNum(n){
+ var m = getOtherNum() + n;
+ if(m < MINOTHERNUM){
+  m = MINOTHERNUM;
+ }
+ if(m > MAXNUM){
+  m = MAXNUM;
+ }
+ setOtherNum(m);
+ reflect();
+}
+
+function showOther(){
+ document.getElementById("otherhide").classList.add("hide");
+document.getElementById("other").classList.remove("hide");
+}
+
+function calcProb(m,n){
+ var p = 1;
+ var mcur = m;
+ for(var i=1; i<=n; i++){
+  p = p * mcur / i;
+  mcur--;
+ }
+ for(var i=0; i<m; i++){
+  p = p/2;
+ }
+ return p;
+}
+
+function reflectProb(n,p){
+ document.getElementById("top" + n).innerText = (100*p).toFixed(PROBDIGITS);
+ var px = (100*p).toFixed(0);
+// if(px == 0 && p > 0){
+//  px = 1;
+// }
+ document.getElementById("bar" + n).style.width = px + "px";
+ document.getElementById("restbar" + n).style.width = (100-px) + "px";
+}
+
+function reflectProbTexts(str){
+ Array.from(document.getElementsByClassName("ijotext")).forEach(e=>e.innerText = str);
+}
+
+function reflectProbs(){
+ var m = calcCoinNum();
+ var restp = 1;
+
+ if(document.getElementById("gt").checked){
+ var p = 1;
+ reflectProb(0,p);
+
+ p = p - calcProb(m,0);
+ reflectProb(1,p);
+
+ p = p - calcProb(m,1);
+ reflectProb(2,p);
+
+ p = p - calcProb(m,2);
+ reflectProb(3,p);
+
+ p = p - calcProb(m,3);
+ reflectProb(4,p);
+
+ reflectProbTexts("以上");
+ }else if(document.getElementById("lt").checked){
+ var p = calcProb(m,0);
+ reflectProb(0,p);
+
+ p += calcProb(m,1);
+ reflectProb(1,p);
+
+ p += calcProb(m,2);
+ reflectProb(2,p);
+
+ p += calcProb(m,3);
+ reflectProb(3,p);
+
+ p += calcProb(m,4);
+ reflectProb(4,p);
+
+ reflectProbTexts("以下");
+ }else{
+ var p = calcProb(m,0);
+ reflectProb(0,p);
+ restp = restp - p;
+
+ p = calcProb(m,1);
+ reflectProb(1,p);
+ restp = restp - p; 
+
+ p = calcProb(m,2);
+ reflectProb(2,p);
+ restp = restp - p;
+
+ p = calcProb(m,3);
+ reflectProb(3,p);
+ restp = restp - p;
+
+ p = calcProb(m,4);
+ reflectProb(4,p);
+ restp = restp - p;
+
+ reflectProbTexts("");
+ }
+}
+
+function reflect(){
+ reflectCoinNum();
+ reflectProbs();
+}
+
+try{
+ setNum(INITNUM);
+ setOtherNum(INITOTHERNUM);
+ document.getElementById("jt").checked = true;
+ reflect();
+}catch(e){
+ log(String(e));
+}
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+input[type="button"],button{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+.btn{
+ height: 40px;
+ width: 60px;
+ font-size: 30px;
+ text-align: center;
+}
+.probtext{
+ text-align: left;
+ display: inline-block;
+ width: 180px;
+}
+#top0,#top1,#top2,#top3,#top4{
+ display: inline-block;
+ width: 60px;
+ text-align: right;
+}
+.bar{
+ background-color: #777722;
+ display: inline-block;
+}
+.restbar{
+ background-color: #333366;
+ display: inline-block;
+}
+.num{
+ display: inline-block;
+ width: 50px;
+ font-size: 30px;
+ text-align: center;
+}
+.jaro{
+ margin: 0 0 8px 0;
+}
+.jarotext{
+ display: inline-block;
+ font-size: 16px;
+}
+.jarocheck{
+ margin: 0 0 0 100px;
+}
+.whenthrowtext{
+ margin: 0 0 8px 0;
+ font-size: 20px;
+}
+.enetext{
+ font-size: 16px;
+}
+#double{
+ margin: 0 0 0 10px;
+}
+#otherhide{
+ margin: 16px 0 16px 0;
+ background-color: #444444;
+ style: inline-block;
+ width: 220px;
+}
+#other{
+ margin: 8px 0 8px 0;
+}
+
+</style>
+</body>
+</html>
