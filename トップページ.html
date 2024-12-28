@@ -1,0 +1,63 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<h1>🍵トップページ</h1>
+
+<h2>🥧 ページ一覧</h2>
+<div>
+<div class="link">
+・<a href="/wordle-tool">wordleのお役立ちツール</a>
+</div>
+<div class="link">
+・<a href="/hoshi-atsume">ほしあつめゲーム</a>
+</div>
+<div class="link">
+・<a href="/calc-celebiEX">ポケポケのセレビィEXにまつわる確率計算</a>
+</div>
+</div>
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+a{
+ color: #777799;
+}
+.link{
+ margin: 0 0 8px 0;
+}
+
+</style>
+</body>
+</html>
