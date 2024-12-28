@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+</head>
+<body>
+
+<h1>ほしあつめ</h1>
+<div id="titlestart">
+<button onclick="change(titlescreen);">TITLE</button>
+<button onclick="change(gamescreen);">START</button>
+<span id="mode"></span>
+</div>
+<div id="stats">
+</div>
+<div id="board">
+</div>
+
+<div>
+<span class="big"></span>
+<button class="big" onclick="holder.pushedmove(-1,0)">↑</button>
+</div>
+<div>
+<button class="big" onclick="holder.pushedmove(0,-1)">←</button>
+<span id="centerbutton" class="big">　</span>
+<button class="big" onclick="holder.pushedmove(0,1)">→</button>
+</div>
+<div>
+<span class="big">　</span>
+<button class="big" onclick="holder.pushedmove(1,0)">↓</button>
+</div>
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+var titlescreen = new class{
+ board;
+ mode;
+ initialize(){
+  this.mode = 6;
+  var board = [
+   "　　　　　　　　　",
+   "　　　　　　　　　",
+   "　　モード選択　　",
+   "　　　　　　　　　",
+   "　　３０個競争　　",
+   "　　サバイバル　　",
+   "　　ほしあつめ　　",
+   "　　　　　　　　　",
+   "　　　　　　　　　"
+  ];
+  this.board = board.map(s=>s.split(""));
+  this.changemode(this.mode);
+  this.reflect();
+ }
+ changemode(m){
+  for(var i=4;i<=6;i++){
+   this.board[i][1] = (i==m ? "☆" : "　");
+   this.board[i][7] = (i==m ? "☆" : "　");
+  }
+ }
+ pushedmove(a,b){
+  if     (a==-1 && this.mode>4){this.mode--;}
+  else if(a== 1 && this.mode<6){this.mode++;}
+  else {return;}
+  this.changemode(this.mode);
+  this.reflect();
+ }
+
+ reflect(){
+  this.reflectboard();
+  this.reflectstats();
+  this.reflectmode();
+ }
+ reflectboard(){
+  var board = this.board;
+  var htmlstr = "";
+  for(var i=0;i<9;i++){
+   htmlstr += "<div>";
+   for(var j=0;j<9;j++){
+    htmlstr += '<span class="cell">';
+    htmlstr += board[i][j];
+    htmlstr += '</span>';
+   }
+   htmlstr += "</div>";
+  }
+  document.getElementById("board").innerHTML = htmlstr;
+ }
+ reflectstats(){
+  document.getElementById("stats").innerHTML = this.modetomsg(this.mode);
+ }
+ reflectmode(){
+  document.getElementById("mode").innerHTML = "　";
+ }
+ modetomsg(m){
+  switch(m){
+   case  4: return "少ない歩数で☆を30個集めよう";
+   case  5: return "☆で回復しながら生き延びよう";
+   case  6: return "ひたすら☆を集めるモードです";
+   default: return "";
+  }
+ }
+}();
+
+var gamescreen = new class{
+
+ board;
+ moves;
+ hp;
+ points;
+ mode;
+ finished;
+
+ initialize(){
+  var board=[];
+  for(var i=0;i<9;i++){
+   board.push([]);
+   for(var j=0;j<9;j++){
+    if(i==4 && j==4){
+     board[i].push(1);
+    }else{
+     board[i].push(this.randomobj());
+    }
+   }
+  }
+  this.board = board;
+  this.moves = 0;
+  this.points = 0;
+  this.hp = 30;
+  this.mode = titlescreen.mode;
+  this.finished = false;
+  this.reflect();
+ }
+
+ randomobj(){
+  var r = Math.random()*24;
+  if(r<8) return -1;
+  if(r<9) return 2;
+  return 0;
+ }
+
+ canmove(a,b){
+  return this.board[4+a][4+b] >= 0;
+ }
+
+ move(a,b){
+  var board = this.board;
+  board[4][4]=0;
+  var newboard = [];
+  for(var i=0;i<9;i++){
+   newboard.push([]);
+   for(var j=0;j<9;j++){
+    if(i+a<0 || i+a>=9 || j+b<0 || j+b>=9){
+     newboard[i].push(this.randomobj());
+    }else{
+     newboard[i].push(board[i+a][j+b]);
+    }
+   }
+  }
+  this.board = newboard;
+  this.moves++;
+  if(this.mode == 5){
+   this.hp--;
+  }
+  if(this.board[4][4] == 2){
+   this.points++;
+   this.hp += 5;
+  }
+  this.board[4][4] = 1;
+ }
+
+ isfinished(){
+  if(this.mode == 4){
+   return this.points >= 30;
+  }
+  if(this.mode == 5){
+   return this.hp <= 0;
+  }
+  return false;
+ }
+
+ determinesymbol(n){
+  switch(n){
+   case -1: return  "▢";
+   case  1: return  "◎";
+   case  2: return  "☆";
+   default: return  "　";
+  }
+ }
+
+ pushedmove(a,b){
+  if(this.finished){
+   return;
+  }
+  if(!this.canmove(a,b)){
+   return;
+  }
+  this.move(a,b);
+  this.finished = this.isfinished();
+  this.reflect();
+ }
+
+ reflect(){
+  this.reflectboard();
+  this.reflectstats();
+  this.reflectmode();
+ }
+
+ reflectboard(){
+  var board = this.board;
+  var htmlstr = "";
+  for(var i=0;i<9;i++){
+   htmlstr += "<div>";
+   for(var j=0;j<9;j++){
+    htmlstr += '<span class="cell">';
+    htmlstr += this.determinesymbol(board[i][j]);
+    htmlstr += '</span>';
+   }
+   htmlstr += "</div>";
+  }
+  document.getElementById("board").innerHTML = htmlstr;
+ }
+
+ reflectstats(){
+  var htmlstr = "";
+  if(this.finished){
+   htmlstr += "終了！ result: ";
+   htmlstr += this.moves;
+  }else{
+   if(this.mode == 5){
+    htmlstr += "health: " + this.hp;
+   }else{
+    htmlstr += "stars: " + this.points;
+   }
+   htmlstr += ", moves: " + this.moves;
+  }
+  document.getElementById("stats").innerHTML = htmlstr;
+ }
+
+ reflectmode(){
+  var str = "【" + titlescreen.board[this.mode].join("").slice(2,7) + "】";
+  document.getElementById("mode").innerHTML = str;
+ }
+}();
+
+var holder;
+change(titlescreen);
+
+function change(screen){
+ holder = screen;
+ holder.initialize();
+}
+
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+#titlestart{
+ height: 18px;
+ margin: 2px 0 6px 0;
+}
+#stats{
+ height: 16px;
+ margin: 6px 0 2px 0;
+}
+.cell{
+ display: inline-block;
+/* line-height: 1.0;*/
+ width: 16px;
+ height: 16px;
+}
+.big{
+ display: inline-block;
+ text-align: center;
+ width: 64px;
+ height: 48px;
+ font-size: 32px;
+}
+</style>
+</body>
+</html>
