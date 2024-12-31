@@ -54,9 +54,9 @@ var titlescreen = new class{
  level;
  obstacle;
  initialize(){
-  this.mode = (gamescreen ? gamescreen.mode : 5);
-  this.level = (gamescreen ? gamescreen.level : 20);
-  this.obstacle = (gamescreen ? gamescreen.obstacle : 5);
+  this.mode = (gamescreen.mode ? gamescreen.mode : 5);
+  this.level = (gamescreen.level ? gamescreen.level : 20);
+  this.obstacle = (gamescreen.obstacle ? gamescreen.obstacle : 5);
   var board = [
    "　　　　　　　　　　",
    "　　　　　　　　　　",
