@@ -47,16 +47,16 @@ function log(str){
 function toZen(c){
  return String.fromCharCode(c.charCodeAt(0) + 0xFEE0); 
 }
-
+var gamescreen;
 var titlescreen = new class{
  board;
  mode;
  level;
  obstacle;
  initialize(){
-  this.mode = 5;
-  this.level = 20;
-  this.obstacle = 5;
+  this.mode = (gamescreen ? gamescreen.mode : 5);
+  this.level = (gamescreen ? gamescreen.level : 20);
+  this.obstacle = (gamescreen ? gamescreen.obstacle : 5);
   var board = [
    "　　　　　　　　　　",
    "　　　　　　　　　　",
@@ -142,7 +142,7 @@ var titlescreen = new class{
  }
 }();
 
-var gamescreen = new class{
+gamescreen = new class{
 
  board;
  moves;
