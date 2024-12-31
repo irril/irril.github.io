@@ -1,0 +1,385 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<h1>倉庫番ライク</h1>
+<div id="titlestart">
+<button onclick="change(titlescreen);">TITLE</button>
+<button onclick="change(gamescreen);">START</button>
+<span id="mode"></span>
+</div>
+<div id="stats">
+</div>
+<div id="board"></div>
+
+
+<div>
+<span class="big"></span>
+<button class="big" onclick="holder.pushedmove(-1,0)">↑</button>
+</div>
+<div>
+<button class="big" onclick="holder.pushedmove(0,-1)">←</button>
+<span id="centerbutton" class="big">　</span>
+<button class="big" onclick="holder.pushedmove(0,1)">→</button>
+</div>
+<div>
+<span class="big">　</span>
+<button class="big" onclick="holder.pushedmove(1,0)">↓</button>
+</div>
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function toZen(c){
+ return String.fromCharCode(c.charCodeAt(0) + 0xFEE0); 
+}
+
+var titlescreen = new class{
+ board;
+ mode;
+ level;
+ obstacle;
+ initialize(){
+  this.mode = 5;
+  this.level = 20;
+  this.obstacle = 5;
+  var board = [
+   "　　　　　　　　　　",
+   "　　　　　　　　　　",
+   "　　倉庫番ライク　　",
+   "　　　　　　　　　　",
+   "　　　　　　　　　　",
+   "　　レベル　　　　　",
+   "　　お邪魔石　　　　",
+   "　　　　　　　　　　",
+   "　　　　　　　　　　",
+   "　　　　　　　　　　"
+  ];
+  this.board = board.map(s=>s.split(""));
+  this.changemode(this.mode);
+  this.changelevel(this.level);
+  this.changeobstacle(this.obstacle);
+  this.reflect();
+ }
+ changemode(m){
+  for(var i=5;i<=6;i++){
+   var mark1 = (i==5 ? "←" : "←");
+   var mark2 = (i==5 ? "→" : "→");
+   this.board[i][1] = (i==m ? mark1 : "　");
+   this.board[i][8] = (i==m ? mark2 : "　");
+  }
+ }
+ changelevel(l){
+  this.board[5][6] = (l<10 ? "　" : toZen(String(l)[0]));
+  this.board[5][7] = (l<10 ? toZen(String(l)) : toZen(String(l)[1]));
+ }
+ changeobstacle(o){
+  this.board[6][6] = (o<10 ? "　" : toZen(String(o)[0]));
+  this.board[6][7] = (o<10 ? toZen(String(o)) : toZen(String(o)[1]));
+ }
+ pushedmove(a,b){
+  if     (a==-1 && this.mode>5){this.mode--;}
+  else if(a== 1 && this.mode<6){this.mode++;}
+  else if(this.mode == 5){
+   if(b==-1 && this.level>11){this.level--;}
+   if(b==1 && this.level<40){this.level++;}
+  }else if(this.mode == 6){
+   if(b==-1 && this.obstacle>0){this.obstacle--;}
+   if(b==1 && this.obstacle<10){this.obstacle++;}
+  }
+  else{return;}
+  this.changemode(this.mode);
+  this.changelevel(this.level);
+  this.changeobstacle(this.obstacle);
+  this.reflect();
+ }
+
+ reflect(){
+  this.reflectboard();
+  this.reflectstats();
+  this.reflectmode();
+ }
+ reflectboard(){
+  var board = this.board;
+  var htmlstr = "";
+  for(var i=0;i<10;i++){
+   htmlstr += "<div>";
+   for(var j=0;j<10;j++){
+    htmlstr += '<span class="cell">';
+    htmlstr += board[i][j];
+    htmlstr += '</span>';
+   }
+   htmlstr += "</div>";
+  }
+  document.getElementById("board").innerHTML = htmlstr;
+ }
+ reflectstats(){
+  document.getElementById("stats").innerHTML = this.modetomsg(this.mode);
+ }
+ reflectmode(){
+  document.getElementById("mode").innerHTML = "　";
+ }
+ modetomsg(m){
+  switch(m){
+   case  5: return "石 □ を全て下に寄せましょう";
+   case  6: return "お邪魔石 ■ は動かせません";
+   default: return "";
+  }
+ }
+}();
+
+var gamescreen = new class{
+
+ board;
+ moves;
+ level;
+ obstacle;
+ r;
+ c;
+ mode;
+ finished;
+
+ initialize(){
+  this.r = 4;
+  this.c = 4;
+  this.level = titlescreen.level;
+  this.obstacle = titlescreen.obstacle;
+  var board = this.generateInitBoard(this.level);
+  board[this.r][this.c] = 1;
+  this.board = board;
+  this.moves = 0;
+  this.mode = titlescreen.mode;
+  this.finished = false;
+  this.reflect();
+ }
+
+ generateInitBoard(level){
+  var preBoard = [];
+  for(var i=0; i<5; i++){
+   for(var j=1; j<9; j++){
+    preBoard.push([Math.random(),i,j]);
+   }
+  }
+  preBoard.sort();
+
+  var board = [];
+  for(var r=0; r<10; r++){
+   var row = new Array(10);
+   if(r==0){
+    row.fill(0);
+   }else{
+    row.fill(9);
+    row[0] = 0;
+    row[9] = 0;
+   }
+   if(r==4){
+    row[4] = 0;
+   }
+   board.push(row);
+  }
+
+  for(var l=0; l<level; l++){
+   var r = preBoard[l][1]*2+1;
+   var c = preBoard[l][2];
+   var cells = [];
+   if(board[r][c] == 9){
+    cells.push([Math.random(),r,c]);
+   }
+   r += (c%2 == 0 ? 1 : -1);
+   if(r < 10 && board[r][c] == 9){
+    cells.push([Math.random(),r,c]);
+   }
+   cells.sort();
+   r = cells[0][1];
+   c = cells[0][2];
+   if(l<this.obstacle){
+    board[r][c] = 3;
+   }else{
+    board[r][c] = 2;
+   }
+  }
+  for(var i=0; i<10; i++){
+   for(var j=0; j<10; j++){
+    if(board[i][j] == 9){
+     board[i][j] = 0;
+    }
+   }
+  }
+  return board;
+ }
+
+ getVal(r,c){
+  if(r<0||r>=10||c<0||c>=10){return -1;}
+  return this.board[r][c];
+ }
+
+ setVal(r,c,v){
+  if(r<0||r>=10||c<0||c>=10){return;}
+  this.board[r][c] = v;
+ }
+
+ canmove(a,b){
+  if(this.getVal(this.r+a,this.c+b) == 3){
+   return false;
+  }
+  return (this.getVal(this.r+a,this.c+b) == 0) || (this.getVal(this.r+2*a,this.c+2*b) == 0);
+ }
+
+ move(a,b){
+  var board = this.board;
+  var r = this.r;
+  var c = this.c;
+  this.setVal(r,c,0);
+  var val = 0;
+  if(this.getVal(r+a,c+b)==2){val = 2;}
+  if(this.getVal(r+2*a,c+2*b)==2){val = 2;}
+  if(this.getVal(r+2*a,c+2*b)==3){val = 3;}
+  this.setVal(r+2*a,c+2*b,val);
+  this.setVal(r+a,c+b,1);
+  this.r = r+a;
+  this.c = c+b;
+  this.moves++;
+ }
+
+ isfinished(){
+
+  var exists0 = false;
+  var check2 = false;
+  for(var i=9; i>=0; i--){
+   for(var j=0; j<10; j++){
+    if(this.board[i][j] == 0){
+     exists0 = true;
+    }
+    if(check2 && this.board[i][j] == 2){
+     return false;
+    }
+   }
+   check2 = exists0;
+  }
+  return true;
+ }
+
+ determinesymbol(n){
+  switch(n){
+   case  3: return  "■"; 
+   case  2: return  "▢";
+   case  1: return  "◎";
+   default: return  "　";
+  }
+ }
+
+ pushedmove(a,b){
+  try{
+  if(this.finished){
+   return;
+  }
+  if(!this.canmove(a,b)){
+   return;
+  }
+  this.move(a,b);
+  this.finished = this.isfinished();
+  this.reflect();
+  }catch(e){
+   log(String(e));
+  }
+ }
+
+ reflect(){
+  this.reflectboard();
+  this.reflectstats();
+  this.reflectmode();
+ }
+
+ reflectboard(){
+  var board = this.board;
+  var htmlstr = "";
+  for(var i=0;i<10;i++){
+   htmlstr += "<div>";
+   for(var j=0;j<10;j++){
+    htmlstr += '<span class="cell">';
+    htmlstr += this.determinesymbol(board[i][j]);
+    htmlstr += '</span>';
+   }
+   htmlstr += "</div>";
+  }
+  document.getElementById("board").innerHTML = htmlstr;
+ }
+
+ reflectstats(){
+  var htmlstr = "";
+  if(this.finished){
+   htmlstr += "終了！ result: ";
+   htmlstr += this.moves;
+  }else{
+   htmlstr += "level: " + this.level;
+   htmlstr += ", moves: " + this.moves;
+  }
+  document.getElementById("stats").innerHTML = htmlstr;
+ }
+
+ reflectmode(){
+  var str = "【" + titlescreen.board[this.mode].join("").slice(2,8) + "】";
+  str = "【倉庫番ライク】";
+  document.getElementById("mode").innerHTML = str;
+ }
+}();
+
+var holder;
+change(titlescreen);
+
+function change(screen){
+ holder = screen;
+ try{
+  holder.initialize();
+ }catch(e){
+  log(String(e));
+ }
+}
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+.cell{
+ display: inline-block;
+/* line-height: 1.0;*/
+ width: 16px;
+ height: 16px;
+}
+.big{
+ display: inline-block;
+ text-align: center;
+ width: 64px;
+ height: 48px;
+ font-size: 32px;
+}
+</style>
+</body>
+</html>
