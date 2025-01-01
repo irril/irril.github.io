@@ -58,7 +58,7 @@ var titlescreen = new class{
   this.mode = (gamescreen.mode ? gamescreen.mode : 5);
   this.level = (gamescreen.level ? gamescreen.level : 20);
   this.obstacle = (gamescreen.obstacle ? gamescreen.obstacle : 5);
-  this.bomb = (gamescreen.bomb ? gamescreen.bomb : 3);
+  this.bomb = (this.bomb ? this.bomb : 3);
   var board = [
    "　　　　　　　　　　",
    "　　　　　　　　　　",
@@ -375,7 +375,7 @@ gamescreen = new class{
  reflectstats(){
   var htmlstr = "";
   if(this.finished){
-   htmlstr += "終了！ result: ";
+   htmlstr += "終了！ moves: ";
    htmlstr += this.moves;
    htmlstr += ", used bombs: " + (titlescreen.bomb - this.bomb);
   }else{
