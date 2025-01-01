@@ -53,10 +53,12 @@ var titlescreen = new class{
  mode;
  level;
  obstacle;
+ bomb;
  initialize(){
   this.mode = (gamescreen.mode ? gamescreen.mode : 5);
   this.level = (gamescreen.level ? gamescreen.level : 20);
   this.obstacle = (gamescreen.obstacle ? gamescreen.obstacle : 5);
+  this.bomb = (gamescreen.bomb ? gamescreen.bomb : 3);
   var board = [
    "　　　　　　　　　　",
    "　　　　　　　　　　",
@@ -65,7 +67,7 @@ var titlescreen = new class{
    "　　　　　　　　　　",
    "　　レベル　　　　　",
    "　　お邪魔石　　　　",
-   "　　　　　　　　　　",
+   "　　爆弾　　　　　　",
    "　　　　　　　　　　",
    "　　　　　　　　　　"
   ];
@@ -73,10 +75,11 @@ var titlescreen = new class{
   this.changemode(this.mode);
   this.changelevel(this.level);
   this.changeobstacle(this.obstacle);
+  this.changebomb(this.bomb);
   this.reflect();
  }
  changemode(m){
-  for(var i=5;i<=6;i++){
+  for(var i=5;i<=7;i++){
    var mark1 = (i==5 ? "←" : "←");
    var mark2 = (i==5 ? "→" : "→");
    this.board[i][1] = (i==m ? mark1 : "　");
@@ -91,20 +94,28 @@ var titlescreen = new class{
   this.board[6][6] = (o<10 ? "　" : toZen(String(o)[0]));
   this.board[6][7] = (o<10 ? toZen(String(o)) : toZen(String(o)[1]));
  }
+ changebomb(b){
+  this.board[7][6] = (b<10 ? "　" : toZen(String(b)[0]));
+  this.board[7][7] = (b<10 ? toZen(String(b)) : toZen(String(b)[1]));
+ }
  pushedmove(a,b){
   if     (a==-1 && this.mode>5){this.mode--;}
-  else if(a== 1 && this.mode<6){this.mode++;}
+  else if(a== 1 && this.mode<7){this.mode++;}
   else if(this.mode == 5){
    if(b==-1 && this.level>11){this.level--;}
    if(b==1 && this.level<40){this.level++;}
   }else if(this.mode == 6){
    if(b==-1 && this.obstacle>0){this.obstacle--;}
    if(b==1 && this.obstacle<10){this.obstacle++;}
+  }else if(this.mode == 7){
+   if(b==-1 && this.bomb>0){this.bomb--;}
+   if(b==1 && this.bomb<5){this.bomb++;}
   }
   else{return;}
   this.changemode(this.mode);
   this.changelevel(this.level);
   this.changeobstacle(this.obstacle);
+  this.changebomb(this.bomb);
   this.reflect();
  }
 
@@ -137,19 +148,23 @@ var titlescreen = new class{
   switch(m){
    case  5: return "石 □ を全て下に寄せましょう";
    case  6: return "お邪魔石 ■ は動かせません";
+   case  7: return "動かせない石は５回押すと爆破できます";
    default: return "";
   }
  }
 }();
 
 gamescreen = new class{
-
+ bombcount;
  board;
  moves;
  level;
  obstacle;
+ bomb;
  r;
  c;
+ lasta;
+ lastb;
  mode;
  finished;
 
@@ -158,6 +173,10 @@ gamescreen = new class{
   this.c = 4;
   this.level = titlescreen.level;
   this.obstacle = titlescreen.obstacle;
+  this.bomb = titlescreen.bomb;
+  this.bombcount = 0;
+  this.lasta = 0;
+  this.lastb = 0;
   var board = this.generateInitBoard(this.level);
   board[this.r][this.c] = 1;
   this.board = board;
@@ -278,24 +297,58 @@ gamescreen = new class{
    case  3: return  "■"; 
    case  2: return  "▢";
    case  1: return  "◎";
+   case  5: return  "爆";
    default: return  "　";
   }
  }
 
  pushedmove(a,b){
   try{
+  this.removebomb();
   if(this.finished){
    return;
   }
   if(!this.canmove(a,b)){
+   if(this.bomb > 0){
+    if(this.bombcount > 0){
+     if(this.lasta == a && this.lastb == b){
+      this.bombcount++;
+     }else{
+      this.lasta = a;
+      this.lastb = b;
+      this.bombcount = 1;
+     }
+    }else{
+     this.bombcount++;
+     this.lasta = a;
+     this.lastb = b;
+    }
+   }else{
+    return;
+   }
+
+   if(this.bombcount >= 5){
+    this.bombcount = 0;
+    this.bomb--;
+    this.setVal(this.r+a,this.c+b,5);
+    this.reflect();
+   }else{
+    this.reflect();
+    this.reflectmode("あと" + toZen("" + (5 - this.bombcount)) + "回で爆破");
+   }
    return;
   }
+  this.bombcount = 0;
   this.move(a,b);
   this.finished = this.isfinished();
   this.reflect();
   }catch(e){
    log(String(e));
   }
+ }
+
+ removebomb(){
+  this.board = this.board.map(r=>r.map(n=>n==5?0:n));
  }
 
  reflect(){
@@ -324,16 +377,20 @@ gamescreen = new class{
   if(this.finished){
    htmlstr += "終了！ result: ";
    htmlstr += this.moves;
+   htmlstr += ", used bombs: " + (titlescreen.bomb - this.bomb);
   }else{
    htmlstr += "level: " + this.level;
    htmlstr += ", moves: " + this.moves;
+   htmlstr += ", bombs: " + this.bomb;
   }
   document.getElementById("stats").innerHTML = htmlstr;
  }
 
- reflectmode(){
-  var str = "【" + titlescreen.board[this.mode].join("").slice(2,8) + "】";
-  str = "【倉庫番ライク】";
+ reflectmode(s){
+  if(!s){
+   s = "倉庫番ライク";
+  }
+  var str = "【" + s + "】";
   document.getElementById("mode").innerHTML = str;
  }
 }();
