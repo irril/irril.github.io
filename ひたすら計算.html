@@ -1,0 +1,318 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<h2>ひたすら計算</h2>
+
+<div>
+<span>level: </span>
+<input type="radio" name="level" id="level0" checked/><label for="level0">0</label>
+<input type="radio" name="level" id="level1" checked/><label for="level1">1</label>
+<input type="radio" name="level" id="level2"/><label for="level2">2</label>
+<span class="hide" id="pointsarea" style="margin: 0 0 0 10px;">正解数：</span><span class="hide" id="points">0</span>
+</div>
+
+<div style="margin: 0 0 10px 0;">
+<div id="mondai"></div>
+<div id="kotae"></div>
+</div>
+
+<div>
+
+<div id="numberbuttons">
+<div>
+<button class="big" onclick="pushed(1);">1</button>
+<button class="big" onclick="pushed(2);">2</button>
+<button class="big" onclick="pushed(3);">3</button>
+</div>
+<div>
+<button class="big" onclick="pushed(4);">4</button>
+<button class="big" onclick="pushed(5);">5</button>
+<button class="big" onclick="pushed(6);">6</button>
+</div>
+<div>
+<button class="big" onclick="pushed(7);">7</button>
+<button class="big" onclick="pushed(8);">8</button>
+<button class="big" onclick="pushed(9);">9</button>
+</div>
+<div>
+<div style="display: inline-block;" class="big">&nbsp;</div>
+<button class="big" id="zero1" onclick="pushed(0);">0</button>
+</div>
+</div>
+
+<div id="otherbuttons">
+<button class="big" onclick="pusheddel();">×</button>
+<div style="display: inline-block;" class="big">&nbsp;</div>
+<button class="big hide" id="zero2" onclick="pushed(0);">0</button>
+</div>
+
+</div>
+
+<div>
+
+<div id="settingtitle" style="margin:50px 0 0 0;" onclick="setting();">
+設定を開く
+</div>
+
+<div id="setting" class="hide">
+
+<div class="settingrow">
+<input type="checkbox" id="setting-pointsarea"/><label for="setting-pointsarea">正解数を表示する</label>
+</div>
+
+<div class="settingrow">
+<input type="checkbox" id="setting-zero"/><label for="setting-zero">ボタン0の位置を変える</label>
+</div>
+
+</div>
+
+</div>
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function byId(id){
+ return document.getElementById(id);
+}
+
+var currentProb;
+
+function pushed(n){
+ try{
+ addAns(n);
+ if(isCorrect(currentProb,getAns())){
+  addPoints();
+  setNewProb();
+ }
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function pusheddel(){
+ try{
+  delAns();
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function getRandomNum(n){
+ return Math.floor(Math.random()*n);
+}
+
+function generateProb(level){
+ var signs = ["＋","−","✕","÷"];
+ var bounds = [10, 10, 10, 10];
+ if(level == 0){
+  bounds = [5, 5, 4, 4];
+ }else if(level == 2){
+  bounds = [50, 50, 20, 20];
+ }
+
+ var n = getRandomNum(4);
+
+ var sign = signs[n];
+ var num1 = getRandomNum(bounds[n]);
+ var num2 = getRandomNum(bounds[n]);
+ if(level == 0){
+  num1++;
+  num2++;
+ }
+
+ if(n == 1){
+  num1 = num1 + num2;
+ }else if(n == 3){
+  num1 = num1 * num2;
+  if(num1 == 0){
+   num2 = getRandomNum(bounds[n]) + 1;
+  }
+ }
+ return [n, num1, sign, num2];
+}
+
+function fetchLevel(){
+ if(byId("level0").checked){
+  return 0;
+ }
+ return byId("level1").checked ? 1 : 2;
+}
+
+function reflectProb(prob){
+ byId("mondai").innerText = prob[1] + prob[2] + prob[3] + "＝";
+}
+
+function addAns(n){
+ var elm = byId("kotae");
+ var txt = elm.innerText;
+ if(txt.length <= 3){
+  elm.innerText = txt + n;
+ }
+}
+function delAns(){
+ var elm = byId("kotae");
+ var txt = elm.innerText;
+ if(txt.length > 0){
+  elm.innerText = txt.slice(0,-1);
+ }
+}
+function getAns(){
+ var n = byId("kotae").innerText;
+ return n ? parseInt(n) : null;
+}
+function clearAns(){
+ byId("kotae").innerText = "";
+}
+
+function isCorrect(prob, ans){
+ var a = prob[1];
+ var b = prob[3];
+ switch(prob[0]){
+  case 0:
+   return a + b == ans;
+  case 1:
+   return a - b == ans;
+  case 2:
+   return a * b == ans;
+  case 3:
+   return a / b == ans;
+ }
+}
+
+function setNewProb(){
+ var level = fetchLevel();
+ var prob = generateProb(level);
+ reflectProb(prob);
+ currentProb = prob;
+ clearAns();
+}
+
+function addPoints(){
+ var elm = byId("points");
+ var n = parseInt(elm.innerText);
+ elm.innerText = n + 1;
+}
+
+try{
+ setNewProb();
+ byId("setting-pointsarea").setAttribute("onclick","setting_pointsarea();");
+ byId("setting-zero").setAttribute("onclick","setting_zero();");
+}catch(e){
+ log(String(e));
+}
+
+
+
+function setting(){
+ try{
+ var setting = byId("setting");
+ var settingtitle = byId("settingtitle");
+ var isOpen = setting.classList.contains("show");
+ if(isOpen){
+  setting.classList.replace("show","hide");
+  settingtitle.innerText = "設定を開く";
+ }else{
+  setting.classList.replace("hide","show");
+  settingtitle.innerText = "設定を閉じる";
+ }
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function setting_pointsarea(){
+ var pointsarea = byId("pointsarea");
+ var points = byId("points");
+ if(pointsarea.classList.contains("show")){
+  pointsarea.classList.replace("show","hide");
+  points.classList.replace("show","hide");
+ }else{
+  pointsarea.classList.replace("hide","show");
+  points.classList.replace("hide","show");
+ }
+}
+
+function setting_zero(){
+ var zero1 = byId("zero1");
+ var zero2 = byId("zero2");
+ if(zero2.classList.contains("hide")){
+  zero1.classList.add("hide");
+  zero2.classList.remove("hide");
+ }else{
+  zero1.classList.remove("hide");
+  zero2.classList.add("hide");
+ }
+}
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+#mondai{
+ display: inline-block;
+ font-size: 30px;
+ margin: 0 0 0 30px;
+}
+#kotae{
+ display: inline-block;
+ width: 130px;
+ font-size: 30px;
+}
+
+#numberbuttons{
+ display: inline-block;
+ width: 240px;
+}
+.big{
+ width: 75px;
+ height: 50px;
+ margin: 0 0 2px 2px;
+ font-size: 40px;
+}
+
+#otherbuttons{
+ display: inline-block;
+ width: 80px;
+ vertical-align: top;
+}
+
+#settingtitle{
+ display: inline-block;
+ background-color: #444466;
+}
+
+.settingrow{
+ margin: 6px 0 0 0;
+}
+
+</style>
+</body>
+</html>
