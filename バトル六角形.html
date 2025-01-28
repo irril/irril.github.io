@@ -1,0 +1,528 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<h2>バトル六角形</h2>
+
+<div>
+<button onclick="reset();">RESET</button>
+<button onclick="backtitle();">TITLE</button>
+</div>
+<br>
+
+<input type="hidden" id="data"></input>
+
+<div id="setting">
+
+<div style="margin: 0 0 10px 0;">技の種類と強さを選び、６つまで追加できます。</div>
+
+<div style="margin: 0 0 10px 5px;">
+強さ:
+<button onclick="pluslevel(-1);">-</button>
+<span id="level">1</span>
+<button onclick="pluslevel(1);">+</button>
+  残り:<span id="leftlevel">10</span>
+</div>
+
+<div id="row11">
+<input type="radio" name="waza" id="waza11" checked/><label for="waza11">威力<span class="level">1</span>で攻撃</label>
+</div>
+
+<div id="row12">
+<input type="radio" name="waza" id="waza12"/><label for="waza12">攻撃力を<span class="level">1</span>増加</label>
+</div>
+
+<div id="row21">
+<input type="radio" name="waza" id="waza21"/><label for="waza21">守備力を<span class="level">1</span>増加</label>
+</div>
+<br>
+
+<div>
+<button onclick="addwaza();">技追加</button>
+<button onclick="delwaza();">技消去</button>
+<button onclick="endwaza();">完了</button>
+</div>
+
+<div id="wazalist">
+<div>技リスト</div>
+</div>
+
+</div>
+
+<div class="hide" id="battle">
+<div id="battlemsg"></div>
+<div style="display:block;height:35px;font-size:20px;background-color:#444466;" onclick="next();">ここをクリックして次へ</div>
+<div id="en1"></div>
+<div id="en1waza"></div>
+<br>
+<div id="en2"></div>
+<div id="en2waza"></div>
+
+</div>
+
+<div id="log" class="show">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function byId(id){
+ return document.getElementById(id);
+}
+
+function byClass(c){
+ return document.querySelectorAll("." + c);
+}
+
+function addData(name,data){
+ byId("data").dataset[name] = data;
+}
+
+function getData(name){
+ return byId("data").dataset[name];
+}
+
+
+function addRow(elm,txt){
+ var row = document.createElement("div");
+ row.textContent = txt;
+ elm.appendChild(row);
+}
+
+function reset(){
+ for(var i=0; i<6; i++){
+  delwaza();
+  pluslevel(-1);
+ }
+ byId("battle").classList.add("hide");
+ byId("setting").classList.remove("hide");
+}
+
+function backtitle(){
+ byId("battle").classList.add("hide");
+ byId("setting").classList.remove("hide");
+}
+
+var setting = new class{
+ get level(){
+  return parseInt(byId("level").innerText);
+ }
+
+ set level(l){
+  if(l < 1){
+   l = 1;
+  }else if(l > 5){
+   l = 5;
+  }
+  byId("level").innerText = l;
+  byClass("level").forEach(e => (e.innerText = l));
+ }
+
+ get leftlevel(){
+  return parseInt(byId("leftlevel").innerText);
+ }
+
+ set leftlevel(l){
+  if(l<0){
+   var msg = "レベルが0を下回りました:" + l;
+   log(msg);
+   throw new Error(msg);
+  }
+  byId("leftlevel").innerText = l;
+ }
+
+ get waza(){
+  var elms = document.querySelectorAll('input[name="waza"]');
+  var elm = null;
+  elms.forEach(e => {
+   if(e.checked){
+    elm = e;
+   }
+  });
+  var id = elm.id.replaceAll("waza","row");
+  var txt = byId(id).innerText;
+  var level = setting.level;
+  return {
+   text: txt,
+   level: level,
+   wazaid: id.replace("row","waza")
+  };
+ }
+}();
+
+function pluslevel(l){
+ setting.level = setting.level + l; 
+}
+
+function addwaza(){
+ try{
+ var dest = byId("wazalist");
+ if(dest.children.length > 6){
+  return;
+ }
+ if(setting.level > setting.leftlevel){
+  return;
+ }
+ var waza = setting.waza;
+ var elm = document.createElement("div");
+ elm.id = "wazaset" + dest.children.length;
+ elm.innerText = "・" + waza.text;
+ elm.dataset.wazaid = waza.wazaid;
+ elm.dataset.level = waza.level;
+ dest.appendChild(elm);
+ setting.leftlevel = 10 - sumwazalistlevel();
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function delwaza(){
+ try{
+ var dest = byId("wazalist");
+ if(dest.children.length <= 1){
+  return;
+ }
+ dest.removeChild(dest.lastElementChild);
+ setting.leftlevel = 10 - sumwazalistlevel();
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function sumwazalistlevel(){
+ var dest = byId("wazalist");
+ var sum = 0;
+ Array.from(dest.children).forEach(e=>sum+=parseInt(e.dataset.level?e.dataset.level:0));
+ return sum;
+}
+
+function getwazalist(){
+ var dest = Array.from(byId("wazalist").children);
+ var wl = [];
+ for(var i=1; i<dest.length; i++){
+  wl.push({
+   wazaid: dest[i].dataset.wazaid,
+   level: parseInt(dest[i].dataset.level)
+  });
+ }
+ while(wl.length < 6){
+  wl.push({
+   wazaid: "waza00",
+   level: 0
+  });
+ }
+ return wl;
+}
+
+function endwaza(){
+ try{
+ byId("battle").classList.remove("hide");
+ byId("setting").classList.add("hide");
+ var en1ws = getwazalist();
+ addData("en1ws",JSON.stringify(en1ws));
+ var en1 = new en("あなた",en1ws);
+ var en2ws = generateRandomWazaset(10);
+ addData("en2ws",JSON.stringify(en2ws));
+ var en2 = new en("あいて",en2ws);
+ btl = new battle(en1,en2);
+ reflectBattle(btl);
+ reflectWaza(en1,"en1waza");
+ reflectWaza(en2,"en2waza");
+ }catch(e){
+  log(String(e));
+ }
+}
+
+var btl;
+
+
+
+
+
+const W00 = "waza00";
+const W11 = "waza11";
+const W12 = "waza12";
+const W21 = "waza21";
+
+class en{
+ name;
+ wazaset;
+ maxhp;
+ _hp;
+ _atk;
+ _def;
+ constructor(name,ws){
+  this.name = name;
+  this.wazaset = ws;
+  this.maxhp = 10;
+  this.hp = this.maxhp;
+  this.atk = 0;
+  this.def = 0;
+ }
+ get hp(){
+  return this._hp;
+ }
+ set hp(h){
+  if(h < 0){
+   h = 0;
+  }else if(h > this.maxhp){
+   h = this.maxhp;
+  }
+  this._hp = h;
+ }
+
+ get atk(){
+  return this._atk;
+ }
+ set atk(a){
+//  if(a < 0){
+//   a = 0;
+//  }
+  if(a > 100){
+   a = 100;
+  }
+  this._atk = a;
+ }
+
+ get def(){
+  return this._def;
+ }
+ set def(d){
+  if(d < 0){
+   d = 0;
+  }else if(d > 100){
+   d = 100;
+  }
+  this._def = d;
+ }
+}
+
+
+class battle{
+ en1;
+ en2;
+ turn;
+ actcount;
+ encur;
+ lastact;
+ constructor(en1,en2){
+  this.resetBattle(en1,en2);
+ }
+ resetBattle(en1,en2){
+  this.en1 = en1;
+  this.en2 = en2;
+  this.turn = 1;
+  this.actcount = 1;
+  this.encur = (Math.random() < 0.5 ? en1 : en2);
+  this.lastact = null;
+ }
+ calcDamage(ena,enb,p){
+  var dmg = ena.atk + p - enb.def;
+  return dmg < 0 ? 0 : dmg;
+ }
+ moveW00(ena,enb,l){
+  return;
+ }
+ moveW11(ena,enb,l){
+  var dmg = this.calcDamage(ena,enb,l);
+  enb.hp = enb.hp - dmg;
+ }
+ moveW12(ena,enb,l){
+  ena.atk = ena.atk + l;
+ }
+ moveW21(ena,enb,l){
+  ena.def = ena.def + l;
+ }
+ chooseMove(en){
+  var i = Math.floor(Math.random()*6);
+  var mv = {
+   wazaid: en.wazaset[i].wazaid,
+   level: en.wazaset[i].level
+  };
+  return mv;
+ }
+ move(ena,enb,mv){
+  var wazaid = mv.wazaid;
+  var level = mv.level;
+  switch(wazaid){
+   case W11: this.moveW11(ena,enb,level);break;
+   case W12: this.moveW12(ena,enb,level);break;
+   case W21: this.moveW21(ena,enb,level);break;
+   default:  this.moveW00(ena,enb,level);break;
+  }
+ }
+ next(){
+  var encur = this.encur;
+  var enopp = (encur == this.en1 ? this.en2 : this.en1);
+  var mv = this.chooseMove(encur);
+  this.move(encur,enopp,mv);
+  this.lastact = {
+   en: encur.name,
+   opp: enopp.name,
+   wazaid: mv.wazaid,
+   level: mv.level
+  };
+  this.actcount--;
+  if(this.actcount <= 0){
+   this.encur = enopp;
+   this.actcount = 2;
+   this.turn++;
+  }
+ }
+}
+
+function generateRandomWazaset(l){
+ var wazas = [W11,W12,W21];
+ var wazap = [3,1,1];
+
+ var sum = wazap.reduce((a,b)=>a+b,0);
+
+ var pickupwaza = ()=>{
+  var r = Math.floor(Math.random()*sum);
+  var psum = 0;
+  var wz = W11;
+  for(var i=0; i<wazap.length; i++){
+   if(psum <= r){
+    wz = wazas[i];
+   }
+   psum += wazap[i];
+  }
+  return wz;
+ };
+
+ var wazaset = [];
+ var levelsum = 0;
+ for(var i=0; i<6; i++){
+  var wazaid = pickupwaza();
+  var level = Math.floor(Math.random()*l/4) + 1;
+  if(level > l - levelsum){
+   level = l - levelsum;
+  }
+  if(level == 0){
+   wazaid = W00;
+  }
+  var w = {
+   wazaid: wazaid,
+   level: level
+  };
+  wazaset.push(w);
+  levelsum += level;
+ }
+ for(var i=0; i<l-levelsum; i++){
+  wazaset[Math.floor(Math.random()*6)].level++;
+ }
+ return wazaset;
+}
+
+function reflectBattle(b){
+ byId("battlemsg").innerText = getBattleMsg(b);
+ reflectEn(b.en1,"en1");
+ reflectEn(b.en2,"en2");
+}
+
+function getBattleMsg(b){
+ if(b.lastact == null){
+  return b.encur.name + "が先攻！";
+ }
+ var la = b.lastact;
+ switch(la.wazaid){
+  case W11:
+   return la.en + "の攻撃！";
+  case W12:
+   return la.en + "の攻撃力が上がった！";
+  case W21:
+   return la.en + "の守備力が上がった！";
+  default:
+   return la.en + "は行動できなかった！";
+ }
+}
+
+function getWazaText(wz){
+ switch(wz.wazaid){
+  case W11:
+   return "威力" + wz.level + "で攻撃";
+  case W12:
+   return "攻撃力" + wz.level + "上げる";
+  case W21:
+   return "守備力" + wz.level + "上げる";
+  default:
+   return "何もしない";
+ }
+}
+
+function reflectWaza(en,id){
+ var elm = byId(id);
+ elm.innerHTML = "";
+ addRow(elm,"ワザ");
+ for(var i=0; i<6; i++){
+  addRow(elm,"・" + getWazaText(en.wazaset[i]));
+ }
+}
+
+function reflectEn(en,id){
+ var text = en.name;
+ text += " HP:" + en.hp;
+ text += " ATK:" + en.atk;
+ text += " DEF:" + en.def;
+ byId(id).innerText = text;
+}
+
+function next(){
+ try{
+ var btn = "<button onclick='retry();'>もう一回</button>";
+ if(btl.en1.hp <= 0){
+  byId("battlemsg").innerHTML = btl.en2.name + "の勝ち！" + btn;
+ }else if(btl.en2.hp <= 0){
+  byId("battlemsg").innerHTML = btl.en1.name + "の勝ち！" + btn;
+ }else{
+  btl.next();
+  reflectBattle(btl);
+ }
+ }catch(e){
+  log(String(e));
+ }
+}
+
+function retry(){
+ var en1ws = getwazalist();
+ var en1 = new en("あなた",en1ws);
+ var en2ws = JSON.parse(getData("en2ws"));
+ var en2 = new en("あいて",en2ws);
+ btl = new battle(en1,en2);
+ reflectBattle(btl);
+ reflectWaza(en1,"en1waza");
+ reflectWaza(en2,"en2waza");
+}
+
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+</style>
+</body>
+</html>
