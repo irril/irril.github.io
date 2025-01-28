@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<div style="display:flex;">
+<h1 style="display:inline-block;">言葉の可視化</h1>
+<div style="display:flex;margin:0 5px 0 auto;">
+<div class="pushable" style="display:flex;margin:auto 0 auto 0;vertical-align:center;" onclick="clearall();">全て消す</div>
+</div>
+</div>
+
+<div style="display:flex;">
+<div style="display:flex;width:75%;">
+<textarea id="text" cols="32" rows="3"></textarea>
+</div>
+<div style="display:flex;width:25%;height:auto;">
+<button style="margin:auto;" onclick="addline();">可視化する</button>
+</div>
+</div>
+
+<div id="lines" style="margin:5px 0 0 0;">
+</div>
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function byId(str){
+ return document.getElementById(str);
+}
+
+
+function addline(){
+ var text = byId("text").value;
+ var elm = document.createElement('div');
+ elm.textContent = text;
+ document.getElementById("lines").prepend(elm);
+
+ byId("text").value = "";
+}
+
+function clearall(){
+ byId("lines").innerHTML = "";
+}
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+.pushable{
+ background-color: #444466;
+ font-size: 15px;
+}
+
+</style>
+</body>
+</html>
