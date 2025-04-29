@@ -1,0 +1,179 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+
+<select id="select" class="hide">
+<option>選択してくだちい</option>
+</select>
+
+<div class="screen" id="s1">
+
+<h2>URLパラメータ除去</h2>
+
+<div>
+<textarea rows="4" cols="32" id="s1input"></textarea>
+</div>
+<div>
+<button onclick="pushed('s1 paste');">貼り付け＆パラメータ除去</button>
+</div>
+<div>
+<textarea rows="4" cols="32" id="s1output"></textarea>
+</div>
+<div>
+<button onclick="pushed('s1 copy');">コピー</button>
+<button onclick="pushed('s1 jump');">URLにジャンプ</button>
+</div>
+
+</div>
+
+<div class="screen" id="s2">
+
+<h2>URLドメイン名チェック</h2>
+
+<div>
+<textarea rows="4" cols="32" id="s2input"></textarea>
+</div>
+<div>
+<button onclick="pushed('s2 paste');">貼り付け</button>
+<button onclick="pushed('s2 check');">ドメイン名チェック</button>
+</div>
+<div id="s2output"></div>
+
+</div>
+
+
+<div id="log" class="hide">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function byId(id){
+ return document.getElementById(id);
+}
+
+function getById(id){
+ return document.getElementById(id).value;
+}
+
+function setById(id, val){
+ var elm = document.getElementById(id);
+ if(elm.tagName == "DIV"){
+  elm.innerText = val;
+ }
+ elm.value = val;
+}
+
+async function getClipboard(){
+ var cb = null;
+ try{
+  cb = await navigator.clipboard.readText();
+ }catch(e){
+  log("getClipboardでエラー:" + e);
+ }
+ return cb;
+}
+
+function setClipboard(str){
+ var r = null;
+ navigator.clipboard.writeText(str).then(
+  () => {r = true;}, 
+  () => {r = false;});
+ return r;
+}
+
+
+function pushed(param){
+ try{
+ var paramArr = param.split(" ");
+ switch(paramArr[0]){
+  case "s1":
+   pusheds1(paramArr[1]);
+   break;
+  case "s2":
+   pusheds2(paramArr[1]);
+   break;
+  default:
+   log("paramArr[0]=" + paramArr[0]);
+ }
+ }catch(e){
+  log(String(e));
+ }
+}
+
+
+function pusheds1(param){
+ switch(param){
+  case "paste":
+   getClipboard().then(t => {
+    setById("s1input", t);
+    setById("s1output", t.replace(/\?.*/, ""));
+   });
+   break;
+  case "copy":
+   setClipboard(getById("s1output"));
+   break;
+  case "jump":
+   window.open(getById("s1output"), '_blank');
+   break;
+  default:
+   log("pusheds1に変なパラメータ:" + param);
+ }
+}
+
+function pusheds2(param){
+ switch(param){
+  case "paste":
+   getClipboard().then(t => {
+    setById("s2input", t);
+   });
+   break;
+  case "check":
+   var url = getById("s2input");
+   url = url.replace(/\?.*/, "");
+   if(url.search(/[^-a-zA-Z0-9\/_:.]/) >= 0){
+    setById("s2output", "URLに英数字以外の文字があります");
+   }else{
+    setById("s2output", "怪しい文字は無さそうです");
+   }
+   break;
+  default:
+   log("pusheds2に変なパラメータ:" + param);
+ }
+}
+
+
+</script>
+<style>
+.hide{
+ display: none;
+}
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button,input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+select{
+ background-color: #8888AA;
+ color: #000000;
+}
+textarea{
+ background-color: #999999;
+}
+</style>
+</body>
+</html>
