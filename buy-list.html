@@ -1,0 +1,352 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>買うものリスト</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<!-- この日本語のコメントは消さないこと！ -->
+</head>
+<body>
+<h2>買うものチェックリスト</h2>
+<div style="padding: 5px 10px; border-width: 0 0 1px 0; border-style: solid; border-color: #666688;">
+<span id="allTab" onclick="pushed('all');" class="tab active">全てのリスト</span>
+<span id="buyTab" onclick="pushed('buy');" class="tab">買うものリスト</span>
+</div>
+<div style="margin: 6px 0 0 0;">
+<input type="text" id="name" style="height: 18px;"/>
+<button onclick="pushed('add');">追加</button>
+</div>
+<div id="all" class="show">
+<h3>全てのリスト</h3>
+<div id="allList"></div>
+</div>
+<div id="buy" class="hide">
+<h3>買うものリスト</h3>
+<div id="buyList"></div>
+</div>
+
+<div id="log" class="show">
+<div>log</div>
+</div>
+
+<script language="JavaScript">
+
+function log(str){
+ var elm = document.createElement('div');
+ elm.textContent = str;
+ document.getElementById("log").appendChild(elm);
+}
+
+function byId(id){
+ return document.getElementById(id);
+}
+
+class LSClient{
+ constructor(name){
+  this._name = name;
+ }
+ _name;
+ _init(){
+  if(!localStorage.getItem(this._name)){
+   localStorage.setItem(this._name, "[]");
+  }
+ }
+ _get(){
+  return JSON.parse(localStorage.getItem(this._name));
+ }
+ _set(arr){
+  localStorage.setItem(this._name, JSON.stringify(arr));
+ }
+
+ _createElm(obj){
+  var elm = document.createElement("div");
+  elm.id = this._name + "-" + obj.name;
+  elm.classList.add("listRow");
+
+  var check = document.createElement("input");
+  check.type = "checkbox";
+  check.id = elm.id + "-check";
+  check.setAttribute("onclick", "pushed('" + elm.id + "');");
+  if(obj.checked){
+   check.setAttribute("checked", "checked");
+  }
+  elm.appendChild(check);
+
+  var label = document.createElement("label");
+  label.setAttribute("for", check.id);
+  label.setAttribute("onclick", "pushed('" + elm.id + "');");
+  label.innerText = obj.name;
+  elm.appendChild(label);
+
+  var btn = document.createElement("button");
+  btn.setAttribute("onclick", "pushed('" + elm.id + "-del');");
+  btn.innerText = "✕";
+  btn.classList.add("delButton");
+  elm.appendChild(btn);
+
+  return elm;
+ }
+
+ _reflect(arr){
+  var htmlArr = arr.map(o => this._createElm(o).outerHTML);
+  byId(this._name + "List").innerHTML = htmlArr.join("");
+ }
+
+ _setChecked(name, checked){
+  var arr = this._get();
+  var obj = arr.find(o => o.name == name);
+  obj.checked = (checked ? true : false);
+  this._set(arr);
+ }
+
+ init(){
+  this._init();
+  this._reflect(this._get());
+ }
+
+ add(obj){
+  var arr = this._get();
+  if(arr.find(o => o.name == obj.name)){
+   throw new Error("リストに同じ名前の要素があります！");
+  }
+  arr.push(obj);
+  var elm = this._createElm(obj);
+  byId(this._name + "List").appendChild(elm);
+  this._set(arr);
+ }
+
+ del(name){
+  var arr = this._get();
+  var obj = arr.find(o => o.name == name);
+  if(!obj){
+   throw new Error("削除対象が見つかりません！");
+  }
+  var elm = byId(this._name + "-" + name);
+  elm.remove();
+  this._set(arr.filter(o => o != obj));
+ }
+
+ isOpen(){
+  var elm = byId(this._name);
+  return !elm.classList.contains("hide");
+ }
+
+ has(name){
+  var elm = byId(this._name + "-" + name);
+  return (elm == null ? false : true);
+ }
+
+ hasChecked(name){
+  var elm = byId(this._name + "-" + name + "-check");
+  if(elm != null && elm.checked){
+   return true;
+  }
+  return false;
+ }
+
+ setChecked(name, checked){
+  var elm = byId(this._name + "-" + name + "-check");
+  elm.checked = (checked ? true : false);
+  this._setChecked(name, checked);
+ }
+}
+
+const g_allClient = new LSClient("all");
+const g_buyClient = new LSClient("buy");
+
+window.onload = function(){
+ try{
+  g_allClient.init();
+  g_buyClient.init();
+ }catch(e){
+  log(e.toString());
+ }
+};
+
+function pushed(str){
+ try{
+ var strArr = str.split("-");
+ if(strArr.length == 1){
+  switch(strArr[0]){
+   case "all":
+    byId("all").classList.remove("hide");
+    byId("buy").classList.add("hide");
+    byId("allTab").classList.add("active");
+    byId("buyTab").classList.remove("active");
+    return;
+   case "buy":
+    byId("all").classList.add("hide");
+    byId("buy").classList.remove("hide");
+    byId("buyTab").classList.add("active");
+    byId("allTab").classList.remove("active");
+    return;
+   case "add":
+    pushedAdd();
+   default:
+  }
+  return;
+ }else if(strArr.length == 2){
+  switch(strArr[0]){
+   case "all":
+    pushedAllCheck(strArr[1]);
+    return;
+   case "buy":
+    pushedBuyCheck(strArr[1]);
+    return;
+   default:
+  }
+  return;
+ }else if(strArr.length == 3){
+  if(strArr[2] == "del"){
+   switch(strArr[0]){
+    case "all":
+     pushedAllDel(strArr[1]);
+     return;
+    case "buy":
+     pushedBuyDel(strArr[1]);
+     return;
+    default:
+   }
+   return;
+  }
+ }
+ }catch(e){
+  log(e.toString());
+ }
+}
+
+function pushedAdd(){
+ var mode = (g_buyClient.isOpen() ? "buy" : "all");
+
+ var name = byId("name").value.trim();
+ if("" == name){
+  notateError("表示名を入力してください");
+  return;
+ }
+ if(name.includes("-")){
+  notateError("表示名にハイフン「-」を含めないでください");
+  return;
+ }
+
+ var obj = {
+  name: name
+ };
+
+ if(mode == "all"){
+  try{
+   g_allClient.add(obj);
+  }catch(e){
+   notateError(e.toString());
+   return;
+  }
+ }else{
+  try{
+   g_buyClient.add(obj);
+  }catch(e){
+   notateError(e.toString());
+   return;
+  }
+  try{
+   g_allClient.add(obj);
+  }catch(e){
+  }
+ }
+　byId("name").value = "";
+}
+
+
+function pushedAllCheck(name){
+ if(g_allClient.hasChecked(name)){
+  if(!g_buyClient.has(name)){
+   g_buyClient.add({
+    name: name
+   });
+  }
+  g_allClient.setChecked(name, true);
+ }else{
+  if(g_buyClient.has(name)){
+   g_buyClient.del(name);
+  }
+  g_allClient.setChecked(name, false);
+ }
+}
+
+function pushedBuyCheck(name){
+ if(g_buyClient.hasChecked(name)){
+  g_buyClient.setChecked(name, true);
+ }else{
+  g_buyClient.setChecked(name, false);
+ }
+}
+
+function pushedAllDel(name){
+ if(g_buyClient.has(name)){
+  g_buyClient.del(name);
+ }
+ if(g_allClient.has(name)){
+  g_allClient.del(name);
+ }
+}
+
+function pushedBuyDel(name){
+ if(g_buyClient.has(name)){
+  g_buyClient.del(name);
+ }
+ if(g_allClient.has(name) && g_allClient.hasChecked(name)){
+  g_allClient.setChecked(name, false);
+ }
+}
+
+
+function notateError(msg = "エラー！"){
+ alert(msg);
+}
+
+
+</script>
+<style>
+body{
+ background-color: #222244;
+ color: #999999;
+}
+button, input[type="button"]{
+ background-color: #666666;
+ color: #000000;
+}
+textarea, input[type="text"]{
+ background-color: #999999;
+}
+.hide{
+ display:none;
+}
+
+.listRow{
+ display: flex;
+ align-items: center;
+ margin: 8px 0 0 0;
+ border-width: 0 0 1px 0;
+ border-style: solid;
+ border-color: #555577;
+}
+.delButton{
+ margin-left: auto;
+}
+
+.tab{
+ padding: 5px 10px;
+ cursor: pointer;
+ border-width: 1px 1px 0 1px;
+ border-style: solid;
+ border-color: #666688;
+}
+.tab.active {
+ background-color: #555577;
+ color: #dddddd;
+ border-width: 2px 2px 0 2px;
+ border-style: solid;
+ border-color: #8888aa;
+}
+
+</style>
+</body>
+</html>
