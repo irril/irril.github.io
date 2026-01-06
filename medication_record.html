@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服薬管理記録</title>
+    <style>
+        body {
+            background-color: #222244;
+            color: #999999;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        button, input[type="button"] {
+            background-color: #666666;
+            color: #000000;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #888888;
+        }
+
+        textarea, input[type="text"], input[type="date"] {
+            background-color: #999999;
+            border: 1px solid #444466;
+            padding: 5px;
+            border-radius: 4px;
+            color: #000000;
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .nav-left, .nav-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .date-controller {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        #current-date-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 140px;
+        }
+
+        #record-area {
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px dashed #444466;
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .medicine-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #333355;
+        }
+
+        .memo-area {
+            margin-top: 20px;
+        }
+
+        .memo-area textarea {
+            width: 100%;
+            height: 80px;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background-color: #333355;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #444466;
+            min-width: 320px;
+            max-width: 90%;
+            color: #cccccc;
+        }
+
+        /* ヘルプ画面用テキストスタイル */
+        .help-content {
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .help-content h4 {
+            color: #9999ff;
+            margin-bottom: 5px;
+            border-left: 3px solid #666666;
+            padding-left: 8px;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .modal-footer-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .count-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .medicine-list {
+            margin-top: 10px;
+            background: #2a2a4a;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .medicine-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            border-bottom: 1px solid #3d3d5d;
+        }
+
+        .error-msg {
+            color: #ff6666;
+            font-size: 0.8rem;
+            min-height: 1.2em;
+        }
+
+        .file-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>服薬管理記録</h1>
+
+    <div class="nav-buttons">
+        <div class="nav-left">
+            <button id="btn-date-modal-open">日付選択</button>
+        </div>
+        <div class="nav-right">
+            <button id="btn-file-modal-open">ファイル</button>
+            <button id="btn-settings-modal-open">⚙</button>
+            <button id="btn-help-modal-open">？</button>
+        </div>
+    </div>
+
+    <div class="date-controller">
+        <button id="btn-prev-week">≪</button>
+        <button id="btn-prev-day">＜</button>
+        <span id="current-date-display"></span>
+        <button id="btn-next-day">＞</button>
+        <button id="btn-next-week">≫</button>
+    </div>
+
+    <main id="record-area">
+        <div id="medicine-records-container"></div>
+        <div class="memo-area">
+            <label>一言メモ：</label><br>
+            <textarea id="memo-field" placeholder="体調や備考を入力"></textarea>
+        </div>
+    </main>
+
+    <div id="modal-date-input" class="overlay hide">
+        <div class="modal-content">
+            <h3 style="text-align: center;">日付選択</h3>
+            <div style="text-align: center;">
+                <input type="date" id="input-date-field">
+                <div id="date-error" class="error-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-close">閉じる</button>
+                <div class="modal-footer-right">
+                    <button id="btn-today-select">今日を選択</button>
+                    <button id="btn-date-submit">選択</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="overlay hide">
+        <div class="modal-content">
+            <h3>設定</h3>
+            <div id="settings-error" class="error-msg"></div>
+            <div class="setting-item">
+                <label>カウント最大数：</label>
+                <div class="count-control">
+                    <button id="btn-count-minus">-</button>
+                    <span id="display-max-count">3</span>
+                    <button id="btn-count-plus">+</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #444466; padding-top: 10px;">
+                <label>薬の登録：</label>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <input type="text" id="input-medicine-name" style="flex:1;">
+                    <button id="btn-add-medicine">追加</button>
+                </div>
+                <div class="medicine-list" id="medicine-list-container"></div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn-close">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-file" class="overlay hide">
+        <div class="modal-content">
+            <h3>ファイル管理</h3>
+            <div class="file-actions">
+                <button id="btn-export">エクスポート（保存）</button>
+                <div style="border-top: 1px solid #444466; padding-top: 15px;">
+                    <label style="font-size: 0.85rem;">インポート（読込）：</label><br>
+                    <input type="file" id="input-import" accept=".json" style="margin-top:5px; font-size: 0.8rem;">
+                    <button id="btn-import" style="margin-top:10px; width:100%;">インポート実行</button>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn-close">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-help" class="overlay hide">
+        <div class="modal-content">
+            <h3>ヘルプ・使い方</h3>
+            <div class="help-content">
+                <h4>服薬の記録</h4>
+                <p>各薬の「服薬」ボタンを押すと回数がカウントされます。「設定」の最大数を超えると0に戻ります。</p>
+                <h4>日付の変更</h4>
+                <p>画面中央の矢印ボタン、または「日付選択」から記録したい日を選べます。メモや回数は日付ごとに自動保存されます。</p>
+                <h4>設定(⚙)</h4>
+                <p>薬の名前の追加・削除や、1日の最大服薬回数を変更できます。</p>
+                <h4>データの保管</h4>
+                <p>ブラウザの保存領域を使用していますが、機種変更時などは「ファイル」からエクスポートしてバックアップしてください。</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn-close">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 状態管理 ---
+        let selectedDate = new Date();
+        let maxCount = 3;
+        let medicines = ["薬A", "薬B"];
+        let dailyData = {};
+
+        const dateDisplay = document.getElementById('current-date-display');
+        const memoField = document.getElementById('memo-field');
+        const medRecordContainer = document.getElementById('medicine-records-container');
+        const displayMaxCount = document.getElementById('display-max-count');
+        const medicineListContainer = document.getElementById('medicine-list-container');
+
+        // --- 共通処理 ---
+        function saveToLocalStorage() {
+            syncCurrentViewToData(); 
+            const appData = { maxCount, medicines, dailyData };
+            localStorage.setItem('medication_app_data', JSON.stringify(appData));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('medication_app_data');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                maxCount = parsed.maxCount || 3;
+                medicines = parsed.medicines || ["薬A", "薬B"];
+                dailyData = parsed.dailyData || {};
+                displayMaxCount.textContent = maxCount;
+            }
+        }
+
+        function getFormattedKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function syncCurrentViewToData() {
+            const key = getFormattedKey(selectedDate);
+            const currentCounts = {};
+            medicines.forEach(med => {
+                const countElem = document.getElementById(`count-${med}`);
+                currentCounts[med] = countElem ? parseInt(countElem.textContent) : 0;
+            });
+            dailyData[key] = { counts: currentCounts, memo: memoField.value };
+        }
+
+        function loadAndRenderData() {
+            const key = getFormattedKey(selectedDate);
+            const data = dailyData[key] || { counts: {}, memo: "" };
+            dateDisplay.textContent = `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`;
+            memoField.value = data.memo || "";
+            medRecordContainer.innerHTML = '';
+            medicines.forEach(med => {
+                const row = document.createElement('div');
+                row.className = 'medicine-row';
+                const count = data.counts[med] || 0;
+                row.innerHTML = `<span>${med}</span><div><span id="count-${med}" style="margin-right:15px;">${count}</span><button onclick="incrementMedicine('${med}')">服薬</button></div>`;
+                medRecordContainer.appendChild(row);
+            });
+        }
+
+        function changeDate(newDate) {
+            syncCurrentViewToData();
+            selectedDate = new Date(newDate);
+            loadAndRenderData();
+            saveToLocalStorage();
+        }
+
+        // --- イベント：服薬操作 ---
+        window.incrementMedicine = function(medName) {
+            const countElem = document.getElementById(`count-${medName}`);
+            let current = parseInt(countElem.textContent);
+            current = (current + 1) > maxCount ? 0 : current + 1;
+            countElem.textContent = current;
+            saveToLocalStorage();
+        };
+
+        // --- イベント：日付操作 ---
+        document.getElementById('btn-date-modal-open').addEventListener('click', () => {
+            document.getElementById('input-date-field').value = getFormattedKey(selectedDate);
+            document.getElementById('modal-date-input').classList.remove('hide');
+        });
+
+        document.getElementById('btn-today-select').addEventListener('click', () => {
+            changeDate(new Date());
+            closeModals();
+        });
+
+        document.getElementById('btn-date-submit').addEventListener('click', () => {
+            const val = document.getElementById('input-date-field').value;
+            if(val) { changeDate(new Date(val)); closeModals(); }
+        });
+
+        document.getElementById('btn-prev-day').addEventListener('click', () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); changeDate(d); });
+        document.getElementById('btn-next-day').addEventListener('click', () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); changeDate(d); });
+        document.getElementById('btn-prev-week').addEventListener('click', () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 7); changeDate(d); });
+        document.getElementById('btn-next-week').addEventListener('click', () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 7); changeDate(d); });
+
+        // --- 各種モーダルオープン ---
+        document.getElementById('btn-settings-modal-open').addEventListener('click', () => {
+            renderMedicineSettingsList();
+            document.getElementById('modal-settings').classList.remove('hide');
+        });
+        document.getElementById('btn-file-modal-open').addEventListener('click', () => document.getElementById('modal-file').classList.remove('hide'));
+        document.getElementById('btn-help-modal-open').addEventListener('click', () => document.getElementById('modal-help').classList.remove('hide'));
+
+        // --- 設定画面のロジック ---
+        document.getElementById('btn-count-minus').addEventListener('click', () => { if (maxCount > 1) { maxCount--; displayMaxCount.textContent = maxCount; saveToLocalStorage(); } });
+        document.getElementById('btn-count-plus').addEventListener('click', () => { if (maxCount < 9) { maxCount++; displayMaxCount.textContent = maxCount; saveToLocalStorage(); } });
+
+        document.getElementById('btn-add-medicine').addEventListener('click', () => {
+            const input = document.getElementById('input-medicine-name');
+            const name = input.value.trim();
+            const err = document.getElementById('settings-error');
+            err.textContent = "";
+            if (!name) { err.textContent = "名前を入力してください"; return; }
+            if (medicines.includes(name)) { err.textContent = "既に登録されています"; return; }
+            medicines.push(name);
+            input.value = "";
+            renderMedicineSettingsList(); loadAndRenderData(); saveToLocalStorage();
+        });
+
+        window.removeMed = function(index) {
+            if (medicines.length <= 1) {
+                document.getElementById('settings-error').textContent = "最低1つの薬が必要です";
+                return;
+            }
+            if (confirm(`「${medicines[index]}」を削除してもよろしいですか？`)) {
+                medicines.splice(index, 1);
+                renderMedicineSettingsList(); loadAndRenderData(); saveToLocalStorage();
+            }
+        };
+
+        function renderMedicineSettingsList() {
+            medicineListContainer.innerHTML = '';
+            medicines.forEach((med, i) => {
+                const item = document.createElement('div');
+                item.className = 'medicine-item';
+                item.innerHTML = `<span>${med}</span><button onclick="removeMed(${i})">×</button>`;
+                medicineListContainer.appendChild(item);
+            });
+        }
+
+        // --- ファイル操作 ---
+        document.getElementById('btn-export').addEventListener('click', () => {
+            syncCurrentViewToData();
+            const appData = { maxCount, medicines, dailyData };
+            const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+            const now = new Date();
+            const ts = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + "_" +
+                       String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `medication_data_${ts}.json`;
+            a.click();
+        });
+
+        document.getElementById('btn-import').addEventListener('click', () => {
+            const fileInput = document.getElementById('input-import');
+            const file = fileInput.files[0];
+            if (!file) { alert("ファイルを選択してください"); return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (confirm("現在のデータが上書きされます。よろしいですか？")) {
+                        maxCount = parsed.maxCount || 3;
+                        medicines = parsed.medicines || ["薬A", "薬B"];
+                        dailyData = parsed.dailyData || {};
+                        displayMaxCount.textContent = maxCount;
+                        loadAndRenderData();
+                        localStorage.setItem('medication_app_data', JSON.stringify({ maxCount, medicines, dailyData }));
+                        alert("インポートが完了しました");
+                        closeModals();
+                    }
+                } catch (err) { alert("ファイルの形式が正しくありません"); }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- 共通UI ---
+        memoField.addEventListener('input', saveToLocalStorage);
+        function closeModals() { document.querySelectorAll('.overlay').forEach(el => el.classList.add('hide')); }
+        document.querySelectorAll('.btn-close').forEach(btn => btn.addEventListener('click', closeModals));
+        window.addEventListener('click', (e) => { if(e.target.classList.contains('overlay')) closeModals(); });
+
+        // --- 初期化 ---
+        loadFromLocalStorage();
+        loadAndRenderData();
+    </script>
+</body>
+</html>
+
+
